@@ -1,0 +1,303 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=10,IE=9,IE=edge,chrome=1">
+    <title>发布升级包</title>
+    <link type="text/css" rel="stylesheet" href="assets/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="assets/webuploader.min.css" />
+    <script src="assets/jquery.min.js"></script>
+    <script src="assets/webuploader.min.js"></script>
+    <script src="assets/bootstrap.min.js"></script>
+    <script src="assets/jquery.md5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+</head>
+
+<body>
+    <!-- <h1>Spring MVC - jQuery File Upload</h1> -->
+    <div style="width:500px;padding:20px">
+        <div>
+            <form id="uploadForm" accept-charset="utf-8" enctype="multipart/form-data" action="http://upload.qiniu.com/">
+                <fieldset>
+                    <legend>Files</legend>
+                    <div id="uploader" class="wu-example">
+                        <div class="btns">
+                            <div id="picker">
+                                <!--<i class="iconfont icon-shangchuan"></i>上传文件-->
+                            </div>
+                            <!--用来存放文件信息-->
+                            <div id="thelist" class="uploader-list">未上传文件</div>
+                            <span class="uploading tip">( 上传中... )</span>
+                            <span class="okuploader tip">( 上传成功 )</span>
+                            <span class="nouploader tip">( 上传失败 )</span>
+                        </div>
+                        <div id="WU_FILE"></div>
+                        <!-- <div class="progress">
+                            <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+                                0%
+                            </div>
+                        </div> -->
+                        <div class="el-upload__tip">仅支持扩展名：zip</div>
+                    </div>
+                    <!-- <input id="fileupload" type="file" name="file">
+                <div id="progress" class="progress">
+                    文件上传进度：
+                    <div class="bar" style="width: 0%;"></div>
+                </div> -->
+                    <!-- <div id="uploadResult">文件上传结果：</div>
+                    <div id="pubResult">文件发布结果：</div>
+                    <label for='version'>版本号:</label><input type='text' id='version' /><br/>
+                    <label for='upgradeDescription'>升级包描述:</label><textarea name="description" id="upgradeDescription">Description here</textarea><br/>
+                    <label for='fileUrl'>文件下载地址:</label><input type='text' id='fileUrl' value="update.xml" /><br/>
+                    <input type='submit' value='发布升级包' id='submit' /> -->
+
+
+
+                    <div class="form-group">
+                        <label for='version'>当前版本号:</label>
+                        <input type="text" class="form-control" id="version" placeholder="请输入当前版本号" name="files">
+                    </div>
+                    <div class="form-group">
+                        <label for='level'>升级级别:</label>
+                        <input type="text" class="form-control" id="level" placeholder="请输入升级级别">
+                    </div>
+                    <div class="form-group">
+                        <label for='explain'>版本说明:</label>
+                        <input type="text" class="form-control" id="explain" placeholder="版本说明">
+                    </div>
+                    <!-- <div class="form-group">
+                        <label for="upgradeDescription">升级包描述:</label>
+                        <input type="text" class="form-control" id="upgradeDescription" placeholder="Description here">
+                    </div> -->
+                    <div class="form-group">
+                        <label for="fileUrl">文件下载路径:</label>
+                        <input type="text" class="form-control" id="fileUrl" placeholder="上传文件成功后自动获取文件路径" disabled="disabled">
+                    </div>
+                    <!-- <div class="form-group">
+                        <label for="curtime">当前时间:</label>
+                        <input type="text" class="form-control" id="curtime" placeholder="update.xml">
+                    </div> -->
+                    <button type="button" class="btn btn-info issue" value='发布升级包' id='submit'>发布升级包</button>
+
+                </fieldset>
+            </form>
+        </div>
+    </div>
+    <script>
+        var Upload = {
+            fileUrl: null,
+            WebUploader: function() {
+                var fd = new FormData(document.querySelector("form"));
+                var _this = this;
+                // if (_this.uploader!="") {
+                //     _this.uploader.destroy();
+                // }
+                var str = '<i class="iconfont icon-shangchuan"></i>上传文件';
+                $(".webuploader-pick").remove();
+                this.uploader = WebUploader.create({
+                    // 选完文件后，是否自动上传。
+                    auto: true,
+                    threads: 1,
+                    //data: fd,
+                    // swf文件路径
+                    swf: 'assets//Uploader.swf', //../../../assets/plugin/Uploader.swf
+
+                    // 文件接收服务端。
+                    server: '/api/filesys/efile/upload', //api/filesys/qnfile/eseal/upload
+
+                    // 选择文件的按钮。可选。
+                    // 内部根据当前运行是创建，可能是input元素，也可能是flash.
+                    pick: '#picker',
+
+                    // 不压缩image, 默认如果是jpeg，文件上传前会压缩一把再上传！
+                    resize: false,
+                    duplicate: true,
+                    method: "post"
+                        //fileNumLimit: 1 ,
+                        //fileSingleSizeLimit: 100000
+
+                });
+                // 当有文件被添加进队列的时候
+                var $list = $('#thelist');
+                $(".webuploader-pick").append(str);
+                this.uploader.on('beforeFileQueued', function(file, data, headers) {
+                    _this.uploader.reset();
+                    $("#thelist").find('img').length
+                        //              console.log(file, 'beforeFileQueued', file.type.split("/")[1])
+                    if (file.name.indexOf(".zip") == -1) { //某些浏览器 不是zip且文件名没有.zip下执行：
+
+                        if (file.type.split("/")[1]) { //file.type.indexOf("application/zip") == -1 && file.type == "image/" || file.type.indexOf("image") != -1 || file.type.indexOf("text") != -1 || file.type.indexOf("word") != -1
+                            bootbox.alert("请上传zip文件");
+                            $("#thelist").text("未上传文件");
+                            //_this.isprogressCorrect = true;
+                            //_this.progressCent = 0;
+                            return false;
+                        }
+
+                    }
+                    if (file.name.length > 45) {
+                        bootbox.alert("您上传的zip文件名过长");
+                        return false;
+                    }
+                    // if (file.size > 104857600) {
+                    //     bootbox.alert("请上传小于100M的zip文件");
+                    //     return false;
+                    // }
+                });
+                this.uploader.on('fileQueued', function(file) {
+                    //              console.log(file, 'queued')
+                    if (file.name.indexOf(".zip") != -1) {
+                        $list.html(file.name);
+                    }
+
+                });
+                // 文件上传过程中创建进度条实时显示。  
+                this.uploader.on('uploadProgress', function(file, percentage) {
+                    $("#fileUrl").val("")
+                    var $li = $('#WU_FILE'),
+                        $percent = $li.find('.progress .progress-bar');
+
+                    // 避免重复创建
+                    if (!$percent.length) {
+                        //$("#uploader .btns").after($li)
+                        $percent = $('<div class="progress progress-striped active">' +
+                            '<div class="progress-bar" role="progressbar" style="width: 0%">' +
+                            '</div>' +
+                            '</div>').appendTo($li).find('.progress-bar');
+                    }
+
+                    //$li.find('p.state').text('上传中...');
+
+
+
+                    if (file.name.indexOf(".zip") != -1) {
+                        var position = (file.size) * percentage,
+                            percentComplete = Math.ceil(percentage * 100)
+                        $percent.css('width', percentage * 100 * 0.98 + '%');
+                        $("span.tip").hide();
+                        $(".tip.uploading").show();
+
+                        // if (position > 1048576) {
+                        //     _this.isprogressCorrect = false;
+                        //     _this.progressCent = _this.forbid;
+                        // } else {
+                        //     _this.isprogressCorrect = true;
+                        //     _this.progressCent = percentComplete;
+                        //     _this.forbid = percentComplete
+                        // }
+                    }
+                });
+                this.uploader.on('uploadBeforeSend', function(file, data, headers) {
+                    headers.accessToken = localStorage.accessToken;
+                    headers['X-Request-With'] = 'XMLHttpRequest';
+                });
+                // 文件上传成功，给item添加成功class, 用样式标记上传成功。  
+                this.uploader.on('uploadSuccess', function(file, ret) {
+                    if (ret.code == 0) {
+                        $("span.tip").hide();
+                        $(".tip.okuploader").show();
+                        $('.progress-bar').css('width', '100%')
+                        _this.fileUrl = ret.data.fileUrl;
+                        $("#fileUrl").val(decodeURIComponent(_this.fileUrl));
+                        this.tipText = file.name
+                        if ($.inArray("signatureFileStr", this.requestParams) == 0) {
+                            this.signatureFileStr = ret.data
+                        }
+                    } else {
+                        bootbox.alert(ret.msg);
+                        //this.isprogressCorrect = true;
+                        //this.progressCent = 0;
+                        //this.tipText = "未上传文件";
+                        //$("#file0").val("")
+                        //bootbox.alert("请上传小于100M的zip文件");
+                    }
+                });
+                // 文件上传失败，显示上传出错。  
+                this.uploader.on('uploadError', function(file, ret) {
+                    $("span.tip").hide();
+                    $(".tip.nouploader").show();
+                    console.log(ret, 'error')
+                        //this.isprogressCorrect = false;
+                    bootbox.alert("网络异常");
+                    return;
+                });
+                this.uploader.on('error', function(file, data, headers) {
+                    //              console.log(file, data, headers, 'error')
+                });
+
+                // 点击上报事件
+                $('.issue').bind('click', function() { ///eseal/reportVersion?sign=' + xml
+                    var xmlText = "<Sign><Version>" + $("#version").val() + "</Version><Upgrade>" + $("#level").val() + "</Upgrade><UpgradeDescription>" + $("#explain").val() + "</UpgradeDescription><FileUrl>" + $("#fileUrl").val() + "</FileUrl><Timestamp>" + new Date() + "</Timestamp></Sign>"
+                    var xml = xmlText +
+                        new Date() +
+                        "__UoL(0Qm5Da=#__Ap9D1Ka1";
+                    xml = $.md5(xml);
+                    if (!$("#version").val()) {
+                        bootbox.alert("请输入版本号");
+                        return
+                    } else if (!$("#level").val()) {
+                        bootbox.alert("请输入升级级别");
+                        return
+                    } else if (!$("#explain").val()) {
+                        bootbox.alert("请输入版本说明");
+                        return
+                    } else if (!$("#fileUrl").val()) {
+                        bootbox.alert("请输入文件路径");
+                        return
+                    }
+                    $.ajax({
+                        type: 'POST',
+                        url: '/eseal/reportVersion?sign=' + xml,
+                        data: xmlText,
+                        dataType: 'xml',
+                        success: function(xml) {
+                            if ($(xml).find("Ret").text() == 1) {
+                                bootbox.alert($(xml).find("Msg").text())
+                                console.log('success', $(xml).find("Msg").text())
+                            } else {
+                                bootbox.alert($(xml).find("Msg").text())
+                            }
+                        },
+                        error: function(xml) {
+                                console.log('error', $(xml).find("Msg").text())
+                            }
+                            //dataType: dataType
+                    });
+                });
+            }
+        };
+        Upload.WebUploader();
+    </script>
+    <style>
+        #picker,
+        #thelist {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .tip {
+            display: none;
+            margin-left: 20px;
+            font-size: 12px;
+        }
+        
+        .tip.okuploader {
+            color: green;
+        }
+        
+        .tip.nouploader {
+            color: red;
+        }
+        
+        .el-upload__tip {
+            color: #666;
+            margin: 10px 0 16px;
+        }
+        
+        .progress {
+            margin-top: 10px;
+        }
+    </style>
+</body>
+
+</html>
