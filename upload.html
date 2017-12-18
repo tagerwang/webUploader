@@ -97,13 +97,13 @@
                 this.uploader = WebUploader.create({
                     // 选完文件后，是否自动上传。
                     auto: true,
-                    threads: 10,
+                    threads: 1,
                     //data: fd,
                     // swf文件路径
                     swf: 'assets//Uploader.swf', //../../../assets/plugin/Uploader.swf
 
                     // 文件接收服务端。
-                    server: '/api/filesys/efile/upload', //api/filesys/qnfile/eseal/upload
+                    server: '/api/filesys/efile/zipupload', //api/filesys/qnfile/eseal/upload
 
                     // 选择文件的按钮。可选。
                     // 内部根据当前运行是创建，可能是input元素，也可能是flash.
@@ -121,20 +121,20 @@
                 var $list = $('#thelist');
                 $(".webuploader-pick").append(str);
                 this.uploader.on('beforeFileQueued', function(file, data, headers) {
-                    //_this.uploader.reset();
+                    _this.uploader.reset();
                     $("#thelist").find('img').length
                         //              console.log(file, 'beforeFileQueued', file.type.split("/")[1])
+                    if (file.name.indexOf(".zip") == -1) { //某些浏览器 不是zip且文件名没有.zip下执行：
 
-                    // if (file.name.indexOf(".zip") == -1) { //某些浏览器 不是zip且文件名没有.zip下执行：
-                    //     if (file.type.split("/")[1]) { //file.type.indexOf("application/zip") == -1 && file.type == "image/" || file.type.indexOf("image") != -1 || file.type.indexOf("text") != -1 || file.type.indexOf("word") != -1
-                    //         bootbox.alert("请上传zip文件");
-                    //         $("#thelist").text("未上传文件");
-                    //         //_this.isprogressCorrect = true;
-                    //         //_this.progressCent = 0;
-                    //         return false;
-                    //     }
-                    // }
+                        if (file.type.split("/")[1]) { //file.type.indexOf("application/zip") == -1 && file.type == "image/" || file.type.indexOf("image") != -1 || file.type.indexOf("text") != -1 || file.type.indexOf("word") != -1
+                            bootbox.alert("请上传zip文件");
+                            $("#thelist").text("未上传文件");
+                            //_this.isprogressCorrect = true;
+                            //_this.progressCent = 0;
+                            return false;
+                        }
 
+                    }
                     if (file.name.length > 45) {
                         bootbox.alert("您上传的zip文件名过长");
                         return false;
@@ -197,8 +197,8 @@
                         $("span.tip").hide();
                         $(".tip.okuploader").show();
                         $('.progress-bar').css('width', '100%')
-                        _this.fileUrl = ret.data.fileUrl;
-                        $("#fileUrl").val(decodeURIComponent(_this.fileUrl));
+                        _this.fileUrl = JSON.stringify(ret);
+                        $("#fileUrl").val(decodeURIComponent(_this.fileUrl)).attr("title",_this.fileUrl);
                         this.tipText = file.name
                         if ($.inArray("signatureFileStr", this.requestParams) == 0) {
                             this.signatureFileStr = ret.data
